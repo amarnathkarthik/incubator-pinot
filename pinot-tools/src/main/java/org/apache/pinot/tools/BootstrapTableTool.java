@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.pinot.common.minion.MinionClient;
+import org.apache.pinot.core.common.MinionConstants;
 import org.apache.pinot.spi.config.table.TableConfig;
 import org.apache.pinot.spi.ingestion.batch.BatchConfig;
 import org.apache.pinot.spi.ingestion.batch.BatchConfigProperties;
@@ -134,7 +135,9 @@ public class BootstrapTableTool {
               schemaFile, offlineTableConfigFile));
     }
     if (tableConfig.getTaskConfig() != null) {
-      final Map<String, String> scheduledTasks = _minionClient.scheduleMinionTasks();
+      final Map<String, String> scheduledTasks = _minionClient.scheduleMinionTasks(
+          MinionConstants.SegmentGenerationAndPushTask.TASK_TYPE,
+          TableNameBuilder.OFFLINE.tableNameWithType(tableName));
       if (scheduledTasks.isEmpty()) {
         LOGGER.info("No scheduled tasks.");
         return true;
@@ -150,7 +153,7 @@ public class BootstrapTableTool {
           String inputDirURI = spec.getInputDirURI();
           if (!new File(inputDirURI).exists()) {
             URL resolvedInputDirURI = BootstrapTableTool.class.getClassLoader().getResource(inputDirURI);
-            if (resolvedInputDirURI.getProtocol().equals("jar")) {
+            if (resolvedInputDirURI != null && "jar".equals(resolvedInputDirURI.getProtocol())) {
               String[] splits = resolvedInputDirURI.getFile().split("!");
               String inputDir = new File(setupTableTmpDir, "inputData").toString();
               JarUtils.copyResourcesToDirectory(splits[0], splits[1].substring(1), inputDir);
